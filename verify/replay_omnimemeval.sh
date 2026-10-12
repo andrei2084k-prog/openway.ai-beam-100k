@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Re-run OmniMemEval's own steps on this run's published outputs, with YOUR OpenAI key.
+# Re-run OmniMemEval's own steps on a run's published outputs, with YOUR OpenAI key.
 #
-#   verify/replay_omnimemeval.sh judge    # re-judge our 400 answers        (steps 4-6, ~$0.15)
-#   verify/replay_omnimemeval.sh answer   # re-answer from our memory blocks, then judge (steps 3-6, ~$1.2)
+#   verify/replay_omnimemeval.sh judge  [run]  # re-judge our 400 answers        (steps 4-6, ~$0.15)
+#   verify/replay_omnimemeval.sh answer [run]  # re-answer from our memory blocks, then judge (steps 3-6, ~$1.2)
+#
+# [run] is beam_v2_full (run 1, the default) or beam_v2_full_r2 (run 2).
 #
 # What it does:
 #   1. clones MemTensor/OmniMemEval at the exact commit the run used (into .replay/, gitignored);
@@ -26,7 +28,12 @@ set -euo pipefail
 MODE="${1:-}"
 case "$MODE" in
     answer|judge) ;;
-    *) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+    *) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
+RUN="${2:-beam_v2_full}"
+case "$RUN" in
+    beam_v2_full|beam_v2_full_r2) ;;
+    *) echo "unknown run: $RUN (beam_v2_full or beam_v2_full_r2)" >&2; exit 2 ;;
 esac
 : "${OPENAI_API_KEY:?set OPENAI_API_KEY to your OpenAI API key}"
 
@@ -35,8 +42,8 @@ WORK="$ROOT/.replay"
 OMNI="$WORK/OmniMemEval"
 OMNI_REPO="https://github.com/MemTensor/OmniMemEval.git"
 OMNI_COMMIT="0b1ea8d28aa2d3e03ac4a6aee17b3006a131da7d"
-SRC="$ROOT/results/beam/openway-beam_v2_full"
-VERSION="replay_${MODE}_$(date -u +%Y%m%dT%H%M%SZ)"
+SRC="$ROOT/results/beam/openway-$RUN"
+VERSION="replay_${MODE}_${RUN}_$(date -u +%Y%m%dT%H%M%SZ)"
 DEST="$OMNI/results/beam/openway-$VERSION"
 ENV_FILE="$WORK/replay.env"
 
@@ -102,6 +109,6 @@ fi
 
 # 5. side by side
 echo
-python3 "$ROOT/verify/compare_replay.py" "$DEST"
+python3 "$ROOT/verify/compare_replay.py" "$DEST" --run "$RUN"
 echo
 echo "replay outputs: $DEST"

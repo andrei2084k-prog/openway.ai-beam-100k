@@ -1,30 +1,37 @@
 # OpenWay.ai memory on BEAM-100K — complete run outputs
 
-This repository holds every output of one complete run of **OpenWay.ai's memory** on the **BEAM-100K** long-term memory benchmark, scored with the **OmniMemEval** harness on 7 October 2026.
+This repository holds every output of two complete, independent runs of **OpenWay.ai's memory** on the **BEAM-100K** long-term memory benchmark, scored with the **OmniMemEval** harness on 7 and 11 October 2026. Both runs used the same code; the second was made to check that the score repeats.
 
 It is here so that anyone can check how the score was obtained. Every claim below can be checked with the scripts in [`verify/`](verify/):
-- four checks need nothing but Python 3;
-- two re-run the benchmark's answer and judge steps with your own OpenAI key, for about $1.
+- five checks need nothing but Python 3;
+- two re-run the benchmark's answer and judge steps with your own OpenAI key, for about $1 per run.
 
 ## Result
 
-**72.06 nugget score** on 400 of 400 questions.
-- **Uncertainty:** standard error ±1.76; bootstrap 95% interval 68.59–75.50.
-- **Failures:** none at search, answer or judge.
-- **Context size:** on average 4,247 tokens per question reached the answer model — the answer prompt plus the memory block.
+| | Run 1 | Run 2 | Mean of the two |
+|---|---:|---:|---:|
+| Date | 7 October 2026 | 11 October 2026 | |
+| **Nugget score** | **72.06** | **71.96** | **72.01** |
+| Standard error | ±1.76 | ±1.79 | ±1.66 |
+| Bootstrap 95% interval | 68.59–75.50 | 68.45–75.37 | 68.73–75.24 |
+| Context tokens per question | 4,247 | 4,219 | 4,233 |
 
-| Category | What it tests | Score | Questions |
-|---|---|---:|---:|
-| preference_following | answers respect the user's preferences | 96.25 | 40 |
-| instruction_following | answers follow instructions the user gave earlier | 91.25 | 40 |
-| abstention | says so when something was never discussed | 85.00 | 40 |
-| information_extraction | recalls specific facts | 84.22 | 40 |
-| summarization | summarizes what happened across sessions | 79.03 | 40 |
-| multi_session_reasoning | combines facts from different sessions | 69.17 | 40 |
-| contradiction_resolution | notices two incompatible statements | 67.50 | 40 |
-| temporal_reasoning | computes dates and durations | 58.75 | 40 |
-| knowledge_update | gives the latest value after changes | 56.88 | 40 |
-| event_ordering | restores the order of events | 32.51 | 40 |
+- **Questions:** 400 of 400 in each run.
+- **Failures:** none at search, answer or judge, in either run.
+- **Context tokens:** on average, what reached the answer model per question — the answer prompt plus the memory block.
+
+| Category | What it tests | Run 1 | Run 2 | Mean | Questions |
+|---|---|---:|---:|---:|---:|
+| preference_following | answers respect the user's preferences | 96.25 | 94.38 | 95.31 | 40 |
+| instruction_following | answers follow instructions the user gave earlier | 91.25 | 91.88 | 91.56 | 40 |
+| abstention | says so when something was never discussed | 85.00 | 91.25 | 88.12 | 40 |
+| information_extraction | recalls specific facts | 84.22 | 87.45 | 85.83 | 40 |
+| summarization | summarizes what happened across sessions | 79.03 | 76.90 | 77.97 | 40 |
+| multi_session_reasoning | combines facts from different sessions | 69.17 | 66.45 | 67.81 | 40 |
+| contradiction_resolution | notices two incompatible statements | 67.50 | 64.06 | 65.78 | 40 |
+| temporal_reasoning | computes dates and durations | 58.75 | 57.50 | 58.12 | 40 |
+| knowledge_update | gives the latest value after changes | 56.88 | 56.25 | 56.56 | 40 |
+| event_ordering | restores the order of events | 32.51 | 33.46 | 32.98 | 40 |
 
 **How a question is scored (nugget score):**
 - Each reference answer is split into rubric items.
@@ -33,15 +40,40 @@ It is here so that anyone can check how the score was obtained. Every claim belo
 - Event-ordering questions are scored by Kendall tau-b against the reference order.
 - The total is the mean over the 400 questions, × 100.
 
+### Does the score repeat?
+
+**What was the same in both runs:**
+- OpenWay.ai's code and configuration;
+- the harness commit, the dataset file, the answer and judge models, the protocol.
+
+**What was not:**
+- Each run started from an empty memory and wrote it again from the conversations.
+- Memory is written by a language model, so the two runs wrote different memories:
+  - none of the 400 memory blocks is the same in both runs;
+  - two blocks for the same question have a median of 33% of their lines in common.
+
+**How far apart the runs landed:**
+- Run 2 − run 1 = **−0.10** points (bootstrap 95% interval −2.59 to +2.34).
+- Question by question, 264 of 400 scored the same, 63 higher and 73 lower.
+- The per-question differences put one run's own spread at **±0.89**. At that spread, two runs of the same code land within ±2.5 of each other 95% of the time; these two landed 0.10 apart.
+- Single categories move more, up to 6.25 points (abstention). Each category has only 40 questions, so that is within its noise.
+
+[`verify/compare_runs.py`](verify/compare_runs.py) prints all of the above from the published files.
+
+**One change on our side between the runs:**
+- The adapter that feeds the harness's sessions into OpenWay.ai gained support for BEAM's larger scales.
+- With it, the adapter stopped applying the product's per-workspace cap on profile-merge model calls. In the product the cap is 200 calls a day, and a benchmark that replays months of conversation in two hours can reach it.
+- In run 2 no conversation needed more than 158 such calls, so the cap would not have changed run 2's outcome.
+
 ### For context: the OmniMemEval table
 
 The other systems' numbers are OmniMemEval's own reproduced results under the same protocol: same answer model, judge, prompts and questions. The source is [`docs/user_memory/results.md` at commit `0b1ea8d`](https://github.com/MemTensor/OmniMemEval/blob/0b1ea8d28aa2d3e03ac4a6aee17b3006a131da7d/docs/user_memory/results.md).
 
-The OpenWay.ai row is **this run**, made by us with the same harness. It is not part of OmniMemEval's published table.
+The OpenWay.ai row is **the mean of our two runs** (72.06 and 71.96), made by us with the same harness. It is not part of OmniMemEval's published table.
 
 | System | BEAM-100K | Context tokens per question |
 |---|---:|---:|
-| **OpenWay.ai (this run)** | **72.06** | **4,247** |
+| **OpenWay.ai (mean of our two runs)** | **72.01** | **4,233** |
 | Viking | 70.76 | 2,023 |
 | Mem0 | 70.41 | 1,055 |
 | Hindsight | 70.22 | 24,085 |
@@ -54,9 +86,11 @@ The OpenWay.ai row is **this run**, made by us with the same harness. It is not 
 | Cognee | 59.30 | 33,065 |
 | EverOS | 58.64 | 7,393 |
 
-**Each score carries about ±1.8 of standard error.** Differences between neighbouring rows of a couple of points are within that noise.
+**Each score carries about ±1.8 of standard error.** Differences between neighbouring rows of a couple of points are within that noise. That includes OpenWay.ai's lead over the next row. What the second run adds is that OpenWay.ai's own number did not move between runs.
 
-## How the run was done
+## How the runs were done
+
+Both runs were done the same way.
 
 **Harness.** [MemTensor/OmniMemEval](https://github.com/MemTensor/OmniMemEval) at commit `0b1ea8d28aa2d3e03ac4a6aee17b3006a131da7d`. Its answer, judge, metric and report steps were run as published. Its ingestion and search steps reach the memory backend through `add()` and `search()`, as they do for every system.
 
@@ -64,7 +98,7 @@ The OpenWay.ai row is **this run**, made by us with the same harness. It is not 
 - `add()` gives memory one session of a conversation;
 - `search()` returns, for a question, the memory block that OpenWay.ai's assistant receives at the start of a turn.
 
-In the harness, OpenWay.ai is registered under the library name `openway`. That is why the results are in `openway-beam_v2_full/` and named `openway_beam_*`, and why the harness's own report and configuration say `openway`.
+In the harness, OpenWay.ai is registered under the library name `openway`. That is why the results are in `openway-beam_v2_full/` (run 1) and `openway-beam_v2_full_r2/` (run 2) and named `openway_beam_*`, and why the harness's own report and configuration say `openway`.
 
 **Data.** BEAM-100K:
 - 20 conversations, 90 sessions, 2,866 assistant turns, 400 questions (40 per category);
@@ -87,20 +121,26 @@ In the harness, OpenWay.ai is registered under the library name `openway`. That 
 2. **Consolidation before the questions.**
    - After the last session and before the first question, memory finished its background consolidation: session summaries and the user's profile.
    - In the product this runs on its own after conversations.
-   - The order is recorded in [`run/timeline.json`](run/timeline.json):
-     - ingestion ended at 18:51:16 UTC;
-     - consolidation ended at 18:55:59;
-     - the first question was read at 18:56:26.
-3. **No language model sees the question on OpenWay.ai's side.** During the search phase OpenWay.ai made **0 language-model calls**. The only calls were 631 embedding calls.
+   - The order is recorded in [`run/timeline.json`](run/timeline.json) for run 1 and [`run/beam_v2_full_r2/timeline.json`](run/beam_v2_full_r2/timeline.json) for run 2:
+
+     | | Run 1 (7 Oct) | Run 2 (11 Oct) |
+     |---|---|---|
+     | Ingestion ended | 18:51:16 UTC | 22:14:53 UTC |
+     | Consolidation ended | 18:55:59 | 22:19:31 |
+     | First question read | 18:56:26 | 22:19:56 |
+3. **No language model sees the question on OpenWay.ai's side.** During the search phase OpenWay.ai made **0 language-model calls** in either run. The only calls were embedding calls: 631 in run 1, 568 in run 2.
 4. **Memory blocks are published verbatim,** exactly as the answer model received them.
    - They contain OpenWay.ai's own framing for its assistant: section headings, the current date, and a line asking to follow rules the user set.
-   - In 35 of 400 blocks, memory held two statements that cannot both be true. There the block carries the product's instruction to give both, each with its date, and ask which holds.
-   - Those 35 blocks span 9 categories, and only 5 of them are contradiction_resolution questions.
+   - Some blocks hold two statements from memory that cannot both be true. There the block carries the product's instruction to give both, each with its date, and ask which holds.
+   - Run 1 has 35 such blocks out of 400. They span 9 categories, and only 5 of them are contradiction_resolution questions.
+   - Run 2 has 24 such blocks. They span 8 categories, and 9 of them are contradiction_resolution questions.
 5. **The judge is a language model and errs in both directions.** Its reason for every verdict is published unmodified. [`verify/show_question.py`](verify/show_question.py) prints it next to the answer, so any single verdict can be checked by eye.
 
 ## What is in this repository
 
-| Path | What it is |
+Run 1 is in `results/beam/openway-beam_v2_full/` and `run/`. Run 2 is in `results/beam/openway-beam_v2_full_r2/` and `run/beam_v2_full_r2/`. Each run has the same set of files:
+
+| Path (run 1; run 2 has the same names) | What it is |
 |---|---|
 | `results/beam/openway-beam_v2_full/openway_beam_search_results.json` | For each of the 400 questions: the question, reference answer, rubric, and the **memory block OpenWay.ai returned** (`search_context`) |
 | `results/beam/openway-beam_v2_full/openway_beam_responses.json` | The answer model's answer to each question |
@@ -108,9 +148,14 @@ In the harness, OpenWay.ai is registered under the library name `openway`. That 
 | `results/beam/openway-beam_v2_full/openway_beam_grades.json`, `openway_beam_results.xlsx` | The harness's totals by category, difficulty and scale |
 | `results/beam/openway-beam_v2_full/exp_report.md`, `experiment_config.sh` | The harness's own report and the configuration it recorded |
 | `results/beam/openway-beam_v2_full/*_status.json`, `success_records.txt`, `token_usage_*.json`, `openway_beam_ingestion_stats.json` | Per-stage status, sessions ingested, answer and judge token usage, ingestion timings |
-| `data/beam_100k.json` | The BEAM-100K dataset the run used: conversations, questions, reference answers, rubrics |
 | `run/timeline.json` | When each phase ran, its model-call counts, and two ordering checks |
 | `run/ingestion_sessions.jsonl` | One line per ingested session: conversation, session, dataset date, assistant turns, start and end time |
+
+Shared by both runs:
+
+| Path | What it is |
+|---|---|
+| `data/beam_100k.json` | The BEAM-100K dataset both runs used: conversations, questions, reference answers, rubrics |
 | `verify/` | The scripts below |
 | `MANIFEST.sha256` | SHA-256 of every file |
 
@@ -118,7 +163,9 @@ The `results/` directory has the harness's own layout. You can drop it into an O
 
 ## How to verify
 
-Requirements: Python 3.10+. Steps 5 and 6 also need `git`, network access and an OpenAI API key.
+Requirements: Python 3.10+. Steps 6 and 7 also need `git`, network access and an OpenAI API key.
+
+Steps 2, 3, 4, 6 and 7 check run 1 by default. Add `--run beam_v2_full_r2` (for steps 6 and 7, the word `beam_v2_full_r2` after the mode) to check run 2.
 
 **1. Nothing was changed after publication.**
 ```bash
@@ -128,12 +175,16 @@ python3 verify/check_manifest.py
 **2. The score follows from the judge's verdicts.**
 ```bash
 python3 verify/recompute_score.py
+python3 verify/recompute_score.py --run beam_v2_full_r2
 ```
-It recomputes every question's score from the per-item verdicts, then the totals, and compares them with the harness's grades file. Expected output: `overall : 72.06 (SE ±1.76, bootstrap 95% 68.59–75.50)` and `PASS`.
+It recomputes every question's score from the per-item verdicts, then the totals, and compares them with the harness's grades file. Expected output, then `PASS`:
+- run 1: `overall : 72.06 (SE ±1.76, bootstrap 95% 68.59–75.50)`;
+- run 2: `overall : 71.96 (SE ±1.79, bootstrap 95% 68.45–75.37)`.
 
 **3. The memory blocks do not carry the reference answers.**
 ```bash
 python3 verify/leak_check.py
+python3 verify/leak_check.py --run beam_v2_full_r2
 ```
 It searches all 400 blocks for:
 - the reference answer verbatim;
@@ -141,26 +192,41 @@ It searches all 400 blocks for:
 - the abstention reference phrase.
 
 Then it traces every match. Expected output:
-- no abstention phrase;
-- 14 short verbatim matches. Each is either said in that conversation itself (12) or a paraphrase of the user's words that sits in most blocks of that conversation whatever the question (2).
+- no abstention phrase, in either run;
+- run 1: 14 short verbatim matches. Each is either said in that conversation itself (12) or a paraphrase of the user's words that sits in most blocks of that conversation whatever the question (2);
+- run 2: 15 short verbatim matches. Each is either said in that conversation itself (12) or text that sits in most blocks of that conversation whatever the question (3).
 
 **4. Read any question end to end.**
 ```bash
 python3 verify/show_question.py --list          # all 400: conversation, question, category, score
 python3 verify/show_question.py 8 11            # question, reference, memory block, answer, verdicts
+python3 verify/show_question.py 8 11 --run beam_v2_full_r2   # the same question in run 2
 ```
 
-**5. Re-judge our answers with your own key** (harness steps 4–6, about $0.15, a few minutes).
+**5. Compare the two runs.**
 ```bash
-OPENAI_API_KEY=sk-... verify/replay_omnimemeval.sh judge
+python3 verify/compare_runs.py
 ```
+It checks that both runs answered the same 400 questions, with the same reference answers and rubrics. Then it prints the numbers in [Does the score repeat?](#does-the-score-repeat):
+- each run's score, and the mean of the two;
+- the paired difference and the per-question counts;
+- one run's own spread;
+- the categories;
+- how much the two runs' memory blocks have in common.
 
-**6. Re-answer from our memory blocks, then judge** (harness steps 3–6, about $1.2, about 10 minutes).
+**6. Re-judge our answers with your own key** (harness steps 4–6, about $0.15, a few minutes).
 ```bash
-OPENAI_API_KEY=sk-... verify/replay_omnimemeval.sh answer
+OPENAI_API_KEY=sk-... verify/replay_omnimemeval.sh judge                    # run 1
+OPENAI_API_KEY=sk-... verify/replay_omnimemeval.sh judge beam_v2_full_r2    # run 2
 ```
 
-**What steps 5 and 6 do:**
+**7. Re-answer from our memory blocks, then judge** (harness steps 3–6, about $1.2, about 10 minutes).
+```bash
+OPENAI_API_KEY=sk-... verify/replay_omnimemeval.sh answer                   # run 1
+OPENAI_API_KEY=sk-... verify/replay_omnimemeval.sh answer beam_v2_full_r2   # run 2
+```
+
+**What steps 6 and 7 do:**
 - clone OmniMemEval at the run's commit into `.replay/`;
 - add the name `openway` to the harness's list of libraries. Its answer, judge and metric steps only check that the name is known and never call a memory backend;
 - run the harness's own scripts on the published blocks;
@@ -168,7 +234,7 @@ OPENAI_API_KEY=sk-... verify/replay_omnimemeval.sh answer
 
 Both models run at temperature 0, but OpenAI models are not bit-for-bit deterministic, so expect close scores, not identical ones.
 
-Step 6 is the strongest check here. It takes only what OpenWay.ai's memory returned and lets you score it under the benchmark's protocol with your own account.
+Step 7 is the strongest check here. It takes only what OpenWay.ai's memory returned and lets you score it under the benchmark's protocol with your own account.
 
 ## License and attribution
 

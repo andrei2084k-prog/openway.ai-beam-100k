@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 """Compare a replay's scores with the published run, overall and per category.
 
-Usage:  python3 verify/compare_replay.py <replay results directory>
+Usage:  python3 verify/compare_replay.py <replay results directory> [--run beam_v2_full_r2]
 (replay_omnimemeval.sh calls it for you at the end.)
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PUBLISHED = ROOT / "results" / "beam" / "openway-beam_v2_full" / "openway_beam_grades.json"
+RUNS = ("beam_v2_full", "beam_v2_full_r2")  # run 1 (7 Oct 2026), run 2 (11 Oct 2026)
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print(__doc__)
-        return 2
-    replay_dir = Path(sys.argv[1])
-    pub = json.loads(PUBLISHED.read_text())
+    ap = argparse.ArgumentParser()
+    ap.add_argument("replay_dir", type=Path)
+    ap.add_argument("--run", choices=RUNS, default=RUNS[0], help="the published run it replays (default: the first)")
+    args = ap.parse_args()
+    replay_dir = args.replay_dir
+    published = ROOT / "results" / "beam" / f"openway-{args.run}" / "openway_beam_grades.json"
+    pub = json.loads(published.read_text())
     new = json.loads((replay_dir / "openway_beam_grades.json").read_text())
 
     def row(name: str, a: float, b: float) -> None:

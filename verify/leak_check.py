@@ -19,11 +19,13 @@ the question. A match is explained by either.
 
 Text is compared case-insensitively with whitespace collapsed.
 
-Usage:  python3 verify/leak_check.py
+Usage:  python3 verify/leak_check.py                  # run 1
+        python3 verify/leak_check.py --run beam_v2_full_r2   # run 2
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -31,7 +33,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RESULTS = ROOT / "results" / "beam" / "openway-beam_v2_full"
+RUNS = ("beam_v2_full", "beam_v2_full_r2")  # run 1 (7 Oct 2026), run 2 (11 Oct 2026)
 DATA = ROOT / "data" / "beam_100k.json"
 MIN_LEN = 25
 PREFIX = re.compile(r"^LLM response should (contain|state|mention):\s*", re.I)
@@ -43,7 +45,10 @@ def norm(text: str) -> str:
 
 
 def main() -> int:
-    search = json.loads((RESULTS / "openway_beam_search_results.json").read_text())
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run", choices=RUNS, default=RUNS[0], help="which run (default: the first)")
+    results = ROOT / "results" / "beam" / f"openway-{ap.parse_args().run}"
+    search = json.loads((results / "openway_beam_search_results.json").read_text())
     rows = [r for qs in search.values() for r in qs]
 
     transcripts = {}

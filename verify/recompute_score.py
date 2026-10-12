@@ -10,11 +10,13 @@ No API key, no third-party packages. Checks three things:
    ``openway_beam_grades.json``;
 3. prints the standard error and a bootstrap 95% interval of the mean.
 
-Usage:  python3 verify/recompute_score.py
+Usage:  python3 verify/recompute_score.py                  # run 1
+        python3 verify/recompute_score.py --run beam_v2_full_r2   # run 2
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import random
 import statistics as st
@@ -23,13 +25,16 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RESULTS = ROOT / "results" / "beam" / "openway-beam_v2_full"
+RUNS = ("beam_v2_full", "beam_v2_full_r2")  # run 1 (7 Oct 2026), run 2 (11 Oct 2026)
 TOL = 1e-9
 
 
 def main() -> int:
-    judged = json.loads((RESULTS / "openway_beam_judged.json").read_text())
-    grades = json.loads((RESULTS / "openway_beam_grades.json").read_text())
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run", choices=RUNS, default=RUNS[0], help="which run (default: the first)")
+    results = ROOT / "results" / "beam" / f"openway-{ap.parse_args().run}"
+    judged = json.loads((results / "openway_beam_judged.json").read_text())
+    grades = json.loads((results / "openway_beam_grades.json").read_text())
     rows = [r for qs in judged.values() for r in qs]
 
     problems = []

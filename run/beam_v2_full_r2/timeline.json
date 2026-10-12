@@ -1,0 +1,51 @@
+{
+  "run": "beam_v2_full_r2",
+  "benchmark": "BEAM-100K (20 conversations, 90 sessions, 400 questions)",
+  "clock": "UTC wall-clock time of the run",
+  "phases": [
+    {
+      "phase": "ingestion",
+      "what": "every session of every conversation added to memory in order, one assistant turn at a time",
+      "first_call": "2026-10-11T20:30:00Z",
+      "last_call": "2026-10-11T22:14:53Z",
+      "llm_calls": 10599,
+      "embedding_calls": 10898,
+      "sessions": 90,
+      "assistant_turns": 2866,
+      "errors": 0
+    },
+    {
+      "phase": "consolidation",
+      "what": "memory's background consolidation after the conversations (session summaries, profile); in the product this runs asynchronously after a conversation",
+      "first_call": "2026-10-11T22:15:11Z",
+      "last_call": "2026-10-11T22:19:31Z",
+      "llm_calls": 136,
+      "embedding_calls": 89
+    },
+    {
+      "phase": "search",
+      "what": "one memory read per question; the returned block is what the answer model received",
+      "first_call": "2026-10-11T22:19:56Z",
+      "last_call": "2026-10-11T22:20:49Z",
+      "llm_calls": 0,
+      "embedding_calls": 568,
+      "questions": 400
+    },
+    {
+      "phase": "answer",
+      "what": "gpt-4.1-mini-2025-04-14 answers each question from the memory block (OmniMemEval step 3)",
+      "completed": "2026-10-11T22:24:30Z",
+      "calls": 400
+    },
+    {
+      "phase": "judge",
+      "what": "gpt-4o-mini-2024-07-18 scores each answer per rubric item (OmniMemEval step 4)",
+      "completed": "2026-10-11T22:26:31Z",
+      "calls": 878
+    }
+  ],
+  "checks": {
+    "no_llm_call_during_search": true,
+    "memory_finished_before_first_search": true
+  }
+}
