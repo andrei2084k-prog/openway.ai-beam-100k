@@ -33,7 +33,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RUNS = ("beam_v2_full", "beam_v2_full_r2")  # run 1 (7 Oct 2026), run 2 (11 Oct 2026)
+RUNS = ("beam_v2_full", "beam_v2_full_r2", "beam_v3_full")  # runs 1, 2 (7, 11 Oct 2026), run 3 (16 Oct)
 DATA = ROOT / "data" / "beam_100k.json"
 MIN_LEN = 25
 PREFIX = re.compile(r"^LLM response should (contain|state|mention):\s*", re.I)

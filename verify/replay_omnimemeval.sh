@@ -4,7 +4,7 @@
 #   verify/replay_omnimemeval.sh judge  [run]  # re-judge our 400 answers        (steps 4-6, ~$0.15)
 #   verify/replay_omnimemeval.sh answer [run]  # re-answer from our memory blocks, then judge (steps 3-6, ~$1.2)
 #
-# [run] is beam_v2_full (run 1, the default) or beam_v2_full_r2 (run 2).
+# [run] is beam_v2_full (run 1, the default), beam_v2_full_r2 (run 2) or beam_v3_full (run 3).
 #
 # What it does:
 #   1. clones MemTensor/OmniMemEval at the exact commit the run used (into .replay/, gitignored);
@@ -32,8 +32,8 @@ case "$MODE" in
 esac
 RUN="${2:-beam_v2_full}"
 case "$RUN" in
-    beam_v2_full|beam_v2_full_r2) ;;
-    *) echo "unknown run: $RUN (beam_v2_full or beam_v2_full_r2)" >&2; exit 2 ;;
+    beam_v2_full|beam_v2_full_r2|beam_v3_full) ;;
+    *) echo "unknown run: $RUN (beam_v2_full, beam_v2_full_r2 or beam_v3_full)" >&2; exit 2 ;;
 esac
 : "${OPENAI_API_KEY:?set OPENAI_API_KEY to your OpenAI API key}"
 
